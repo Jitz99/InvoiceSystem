@@ -116,7 +116,14 @@ namespace InvoiceSystem.Api
 				ToDate = toDate
 			};
 
-			var result = await _service.SearchInvoicesAsync(filter, page, pageSize);
+			var searchResult = await _service.SearchInvoicesAsync(filter, page, pageSize);
+			var result = searchResult.Select(i => new InvoiceResponse(
+				i.Id,
+				i.Amount.ToString("F2"),
+				i.PaidAmount.ToString("F2"),
+				i.DueDate,
+				i.Status.ToString()
+			));
 			return Ok(result);
 		}
 
