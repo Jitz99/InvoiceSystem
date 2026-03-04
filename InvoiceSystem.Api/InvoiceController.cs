@@ -42,8 +42,8 @@ namespace InvoiceSystem.Api
 			var invoices = (await _service.GetAllInvoicesAsync())
 				.Select(i => new InvoiceResponse(
 					i.Id,
-					i.Amount,
-					i.PaidAmount,
+					i.Amount.ToString("F2"),
+					i.PaidAmount.ToString("F2"),
 					i.DueDate,
 					i.DisplayStatus.ToString()
 				));
@@ -130,8 +130,8 @@ namespace InvoiceSystem.Api
 
 			var result = history.Select(i => new InvoiceResponse(
 				i.Id,
-				i.Amount,
-				i.PaidAmount,
+				i.Amount.ToString("F2"),
+				i.PaidAmount.ToString("F2"),
 				i.DueDate,
 				i.Status.ToString()
 			));
@@ -149,8 +149,8 @@ namespace InvoiceSystem.Api
 
 			var result = new InvoiceResponse(
 				invoice.Id,
-				invoice.Amount,
-				invoice.PaidAmount,
+				invoice.Amount.ToString("F2"),
+				invoice.PaidAmount.ToString("F2"),
 				invoice.DueDate,
 				invoice.Status.ToString()
 			);
@@ -171,8 +171,8 @@ namespace InvoiceSystem.Api
 
 			var result = new InvoiceResponse(
 				invoice.Id,
-				invoice.Amount,
-				invoice.PaidAmount,
+				invoice.Amount.ToString("F2"),
+				invoice.PaidAmount.ToString("F2"),
 				invoice.DueDate,
 				invoice.Status.ToString()
 			);

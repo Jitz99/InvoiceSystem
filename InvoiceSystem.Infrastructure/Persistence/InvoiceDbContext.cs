@@ -14,5 +14,15 @@ namespace InvoiceSystem.Infrastructure.Persistence
 			: base(options) { }
 
 		public DbSet<Invoice> Invoices => Set<Invoice>();
+		protected override void OnModelCreating(ModelBuilder modelBuilder)
+		{
+			modelBuilder.Entity<Invoice>()
+				.Property(i => i.Amount)
+				.HasPrecision(18, 2);
+
+			modelBuilder.Entity<Invoice>()
+				.Property(i => i.PaidAmount)
+				.HasPrecision(18, 2);
+		}
 	}
 }

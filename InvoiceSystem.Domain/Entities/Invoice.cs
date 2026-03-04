@@ -50,7 +50,7 @@ public class Invoice
 			throw new ArgumentException("Amount must be greater than zero.");
 
 		Id = id;
-		Amount = amount;
+		Amount = Math.Round(amount, 2);
 		DueDate = dueDate;
 		CreatedAt = DateTime.UtcNow;
 
@@ -96,7 +96,8 @@ public class Invoice
 		if (PaidAmount + paymentAmount > Amount)
 			throw new InvalidOperationException("Payment exceeds invoice amount.");
 
-		PaidAmount += paymentAmount;
+		//PaidAmount += paymentAmount;
+		PaidAmount = Math.Round(PaidAmount + paymentAmount, 2);
 
 		UpdateStatus();
 	}

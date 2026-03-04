@@ -30,116 +30,127 @@ namespace InvoiceSystem.Tests.Application
 		}
 
 		[Fact]
-		public void CreateInvoice_ShouldCallRepositoryAdd()
+		public async Task CreateInvoice_ShouldCallRepositoryAdd()
 		{
 			var dueDate = DateTime.UtcNow.AddDays(5);
 
-			_service.CreateInvoice(200, dueDate);
+			await _service.CreateInvoiceAsync(200, dueDate);
 
 			_repositoryMock.Verify(
-				r => r.Add(It.IsAny<Invoice>()),
+				r => r.AddAsync(It.IsAny<Invoice>()),
 				Times.Once);
 		}
 
 		[Fact]
-		public void AddPayment_ShouldUpdateInvoice()
+		public async Task AddPayment_ShouldUpdateInvoice()
 		{
-			var invoice = new Invoice(0, 100, DateTime.UtcNow.AddDays(5));
+			var invoice = new Invoice(1000, 100, DateTime.UtcNow.AddDays(5));
 
-			_repositoryMock.Setup(r => r.GetById(invoice.Id))
-				.Returns(invoice);
+			_repositoryMock
+				.Setup(r => r.GetByIdAsync(invoice.Id))
+				.ReturnsAsync(invoice);
 
-			_service.AddPayment(invoice.Id, 50);
+			await _service.AddPaymentAsync(invoice.Id, 50);
 
 			invoice.PaidAmount.Should().Be(50);
 
-			_repositoryMock.Verify(r => r.Update(invoice), Times.Once);
+			_repositoryMock.Verify(r => r.UpdateAsync(invoice), Times.Once);
 		}
 
 		[Fact]
-		public void AddPayment_ShouldThrowException_WhenPaymentExceedsAmount()
+		public async Task AddPayment_ShouldThrowException_WhenPaymentExceedsAmount()
 		{
-			var invoice = new Invoice(0, 100, DateTime.UtcNow.AddDays(5));
+			var invoice = new Invoice(1000, 100, DateTime.UtcNow.AddDays(5));
 
-			_repositoryMock.Setup(r => r.GetById(invoice.Id))
-				.Returns(invoice);
+			_repositoryMock
+				.Setup(r => r.GetByIdAsync(invoice.Id))
+				.ReturnsAsync(invoice);
 
-			Action act = () => _service.AddPayment(invoice.Id, 150);
+			Func<Task> act = async () =>
+				await _service.AddPaymentAsync(invoice.Id, 150);
 
-			act.Should().Throw<InvalidOperationException>()
+			await act.Should()
+				.ThrowAsync<InvalidOperationException>()
 				.WithMessage("Payment exceeds invoice amount.");
 
-			_repositoryMock.Verify(r => r.Update(It.IsAny<Invoice>()), Times.Never);
+			_repositoryMock.Verify(r => r.UpdateAsync(It.IsAny<Invoice>()), Times.Never);
 		}
 
 		[Fact]
-		public void ProcessOverdue_ShouldCreateNewInvoice_WhenUnpaid()
+		public async Task ProcessOverdue_ShouldCreateNewInvoice_WhenUnpaid()
 		{
-			var oldInvoice = new Invoice(0, 100, DateTime.UtcNow.AddDays(-20));
+			var oldInvoice = new Invoice(1000, 100, DateTime.UtcNow.AddDays(-20));
 
 			var invoices = new List<Invoice> { oldInvoice };
 
-			_repositoryMock.Setup(r => r.GetAll()).Returns(invoices);
+			_repositoryMock
+				.Setup(r => r.GetAllAsync())
+				.ReturnsAsync(invoices);
 
-			_service.ProcessOverdue(10, 5);
+			await _service.ProcessOverdueAsync(10, 5);
 
-			_repositoryMock.Verify(r => r.Add(It.IsAny<Invoice>()), Times.Once);
+			_repositoryMock.Verify(r => r.AddAsync(It.IsAny<Invoice>()), Times.Once);
+
 			oldInvoice.Status.Should().Be(InvoiceStatus.Void);
 		}
 
 		[Fact]
-		public void ProcessOverdue_ShouldNotCreateInvoice_WhenAlreadyPaid()
+		public async Task ProcessOverdue_ShouldNotCreateInvoice_WhenAlreadyPaid()
 		{
-			var invoice = new Invoice(0, 100, DateTime.UtcNow.AddDays(-20));
-			invoice.AddPayment(100); // fully paid
+			var invoice = new Invoice(1000, 100, DateTime.UtcNow.AddDays(-20));
+			invoice.AddPayment(100);
 
 			var invoices = new List<Invoice> { invoice };
-
-			_repositoryMock.Setup(r => r.GetAll()).Returns(invoices);
-
-			_service.ProcessOverdue(10, 5);
-
-			_repositoryMock.Verify(r => r.Add(It.IsAny<Invoice>()), Times.Never);
-
-			invoice.Status.Should().Be(InvoiceStatus.Paid);
-		}
-
-		[Fact]
-		public void ProcessOverdue_ShouldCreateInvoice_WhenPartiallyPaid()
-		{
-			var invoice = new Invoice(0, 100, DateTime.UtcNow.AddDays(-20));
-			invoice.AddPayment(40); // partial payment
-
-			var invoices = new List<Invoice> { invoice };
-
-			_repositoryMock.Setup(r => r.GetAll()).Returns(invoices);
-
-			_service.ProcessOverdue(10, 5);
-
-			_repositoryMock.Verify(r => r.Add(It.IsAny<Invoice>()), Times.Once);
-
-			invoice.Status.Should().Be(InvoiceStatus.Paid);
-		}
-
-		[Fact]
-		public void GetAllInvoices_ShouldReturnInvoices()
-		{
-			var invoices = new List<Invoice>
-	{
-		new Invoice(0, 100, DateTime.UtcNow.AddDays(5)),
-		new Invoice(0, 200, DateTime.UtcNow.AddDays(10))
-	};
 
 			_repositoryMock
-				.Setup(r => r.GetAll())
-				.Returns(invoices);
+				.Setup(r => r.GetAllAsync())
+				.ReturnsAsync(invoices);
 
-			var result = _service.GetAllInvoices();
+			await _service.ProcessOverdueAsync(10, 5);
+
+			_repositoryMock.Verify(r => r.AddAsync(It.IsAny<Invoice>()), Times.Never);
+
+			invoice.Status.Should().Be(InvoiceStatus.Paid);
+		}
+
+		[Fact]
+		public async Task ProcessOverdue_ShouldCreateInvoice_WhenPartiallyPaid()
+		{
+			var invoice = new Invoice(1000, 100, DateTime.UtcNow.AddDays(-20));
+			invoice.AddPayment(40);
+
+			var invoices = new List<Invoice> { invoice };
+
+			_repositoryMock
+				.Setup(r => r.GetAllAsync())
+				.ReturnsAsync(invoices);
+
+			await _service.ProcessOverdueAsync(10, 5);
+
+			_repositoryMock.Verify(r => r.AddAsync(It.IsAny<Invoice>()), Times.Once);
+
+			invoice.Status.Should().Be(InvoiceStatus.Paid);
+		}
+
+		[Fact]
+		public async Task GetAllInvoices_ShouldReturnInvoices()
+		{
+			var invoices = new List<Invoice>
+		{
+			new Invoice(1000, 100, DateTime.UtcNow.AddDays(5)),
+			new Invoice(1001, 200, DateTime.UtcNow.AddDays(10))
+		};
+
+			_repositoryMock
+				.Setup(r => r.GetAllAsync())
+				.ReturnsAsync(invoices);
+
+			var result = await _service.GetAllInvoicesAsync();
 
 			result.Should().HaveCount(2);
 			result.Should().BeEquivalentTo(invoices);
 
-			_repositoryMock.Verify(r => r.GetAll(), Times.Once);
+			_repositoryMock.Verify(r => r.GetAllAsync(), Times.Once);
 		}
 	}
 }
